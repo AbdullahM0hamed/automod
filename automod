@@ -1,0 +1,64 @@
+#!/bin/bash
+
+download_smali() {
+    if [[ ! -f ~/.config/automod/smali.jar ]]
+    then
+        echo "Downloading Smali.jar"
+        curl -L https://bitbucket.org/JesusFreke/smali/downloads/smali-2.5.2.jar > ~/.config/automod/smali.jar
+    fi
+}
+
+download_baksmali() {
+    if [[ ! -f ~/.config/automod/baksmali.jar ]]
+    then
+        echo "Downloading Baksmali.jar"
+        curl -L https://bitbucket.org/JesusFreke/smali/downloads/baksmali-2.5.2.jar > ~/.config/automod/baksmali.jar
+    fi
+}
+
+mkdir -p ~/.config/automod 2> /dev/null
+download_smali
+download_baksmali
+
+smali() {
+    java -jar ~/.config/automod/smali.jar "$@"
+}
+
+baksmali() {
+    java -jar ~/.config/automod/baksmali.jar "$@"
+}
+
+folder=$(echo "${1%.*}" | tr ' ' '_')
+if [[ ! -x $folder ]]
+then
+    mkdir $folder
+fi
+
+classes=$(unzip -l "$1" | grep -oP "classes(\d+)?\.dex")
+for class in $classes
+do
+    unzip -p "$1" "$class" > "$folder/$class"
+    if [[ $(dx --find-usages "$folder/$class" "Landroid/app/Application;" onCreate | grep invoke-super) == "" ]]
+    then
+        rm "$folder/$class"
+    else
+        echo "Application found in $class"
+        baksmali d "$folder/$class" -o "$folder/smali_${class%.*}"
+        cd "$folder"
+        rm "$class"
+        sed -i "s/\.super\sLandroid\/app\/Application;/.super Lautomod\/App;/" $(ack -l ".super Landroid/app/Application;")
+        smali a "smali_${class%.*}" -o "$class"
+        rm -rf "smali_${class%.*}"
+        cd ..
+    fi
+done
+
+unzip -d "$folder"_extracted "$1"
+classes=$(ls $folder)
+for class in $classes
+do
+    rm "$folder"_extracted/"$class"
+done
+
+mv "$folder"/* "$folder"_extracted
+rm -rf "$folder"
