@@ -21,8 +21,8 @@ To use this, simply run `automod [APK]`
 This program makes the app's application class inherit from a custom Application class, which allows us to run our code so we can add theme + extension support to closed-source apps
 
 # TODO
-[ ] - Support apps that don't have an Application class, by adding our own in manifest
+- [ ] - Support apps that don't have an Application class, by adding our own in manifest
 
-[ ] - Sign the output APK
+- [ ] - Sign the output APK
 
-[ ] - Replace google services with microG in some apps (like YouTube)
+- [ ] - Replace google services with microG in some apps (like YouTube)
