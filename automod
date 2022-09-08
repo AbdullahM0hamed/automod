@@ -1,31 +1,48 @@
 #!/bin/bash
 
+config=~/.config/automod
 download_smali() {
-    if [[ ! -f ~/.config/automod/smali.jar ]]
+    if [[ ! -f $config/smali.jar ]]
     then
         echo "Downloading Smali.jar"
-        curl -L https://bitbucket.org/JesusFreke/smali/downloads/smali-2.5.2.jar > ~/.config/automod/smali.jar
+        curl -L https://bitbucket.org/JesusFreke/smali/downloads/smali-2.5.2.jar > $config/smali.jar
     fi
 }
 
 download_baksmali() {
-    if [[ ! -f ~/.config/automod/baksmali.jar ]]
+    if [[ ! -f $config/baksmali.jar ]]
     then
         echo "Downloading Baksmali.jar"
-        curl -L https://bitbucket.org/JesusFreke/smali/downloads/baksmali-2.5.2.jar > ~/.config/automod/baksmali.jar
+        curl -L https://bitbucket.org/JesusFreke/smali/downloads/baksmali-2.5.2.jar > $config/baksmali.jar
     fi
 }
 
-mkdir -p ~/.config/automod 2> /dev/null
+get_compiled_dex() {
+    if [[ ! -f $config/App.dex ]]
+    then
+        if [[ $(command -v kotlinc) == "" ]]
+        then
+            curl -L "https://github.com/AbdullahM0hamed/automod/blob/master/App.dex?raw=true" > $config/App.dex
+        else
+            curl -L "https://github.com/AbdullahM0hamed/automod/raw/master/App.kt" > $config/App.kt
+            curl -L "https://github.com/Sable/android-platforms/blob/master/android-30/android.jar?raw=true" > $config/android.jar
+            kotlinc -cp $config/android.jar -d $config/App.jar $config/App.kt
+            dx --dex --output=$config/App.dex $config/App.jar
+        fi
+    fi
+    cp $config/App.dex "$1"
+}
+
+mkdir -p $config 2> /dev/null
 download_smali
 download_baksmali
 
 smali() {
-    java -jar ~/.config/automod/smali.jar "$@"
+    java -jar $config/smali.jar "$@"
 }
 
 baksmali() {
-    java -jar ~/.config/automod/baksmali.jar "$@"
+    java -jar $config/baksmali.jar "$@"
 }
 
 folder=$(echo "${1%.*}" | tr ' ' '_')
@@ -62,3 +79,16 @@ done
 
 mv "$folder"/* "$folder"_extracted
 rm -rf "$folder"
+last=$(basename $(ls "$folder"_extracted/classes* | tail -1) | grep -oP "\d+")
+
+if [[ $last -eq 0 ]]
+then
+    last=$(($last+2))
+else
+    last=$(($last+1))
+fi
+get_compiled_dex "$folder"_extracted/classes$last.dex
+cd "$folder"_extracted
+zip -r -D ../"$folder"_Modded_unsigned.apk *
+cd ..
+rm -rf "$folder"_extracted
