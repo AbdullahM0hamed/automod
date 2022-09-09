@@ -6,7 +6,7 @@ To download automod, simply download the [raw script](https://github.com/Abdulla
 
 • dx
 
-• curl (should be default)
+• aria2c/curl/wget (any, prioritised in that order)
 
 • kotlinc (optional - but if you are paranoid and want App.kt to be compiled locally, you will need this)
 
@@ -26,3 +26,5 @@ This program makes the app's application class inherit from a custom Application
 - [ ] - Sign the output APK
 
 - [ ] - Replace google services with microG in some apps (like YouTube)
+
+- [ ] - Properly Zip/Unzip APKs where there are multiple files with same name but different cases - an example (at least for me): https://play.google.com/store/apps/details?id=com.tavultesoft.kmapro

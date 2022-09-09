@@ -1,11 +1,24 @@
 #!/bin/sh
 
 config=~/.config/automod
+
+download() {
+    if [[ $(command -v aria2c) != "" ]]
+    then
+        aria2c "$1" -d "$(dirname "$2")" -o "$(basename "$2")"
+    elif [[ $(command -v curl) != "" ]]
+    then
+        curl -L "$1" > "$2"
+    else
+        wget "$1" -O "$2"
+    fi
+}
+
 download_smali() {
     if [[ ! -f $config/smali.jar ]]
     then
         echo "Downloading Smali.jar"
-        curl -L https://bitbucket.org/JesusFreke/smali/downloads/smali-2.5.2.jar > $config/smali.jar
+        download https://bitbucket.org/JesusFreke/smali/downloads/smali-2.5.2.jar $config/smali.jar
     fi
 }
 
@@ -13,7 +26,7 @@ download_baksmali() {
     if [[ ! -f $config/baksmali.jar ]]
     then
         echo "Downloading Baksmali.jar"
-        curl -L https://bitbucket.org/JesusFreke/smali/downloads/baksmali-2.5.2.jar > $config/baksmali.jar
+        download https://bitbucket.org/JesusFreke/smali/downloads/baksmali-2.5.2.jar $config/baksmali.jar
     fi
 }
 
@@ -22,10 +35,10 @@ get_compiled_dex() {
     then
         if [[ $(command -v kotlinc) == "" ]]
         then
-            curl -L "https://github.com/AbdullahM0hamed/automod/blob/master/App.dex?raw=true" > $config/App.dex
+            download "https://github.com/AbdullahM0hamed/automod/blob/master/App.dex?raw=true" $config/App.dex
         else
-            curl -L "https://github.com/AbdullahM0hamed/automod/raw/master/App.kt" > $config/App.kt
-            curl -L "https://github.com/Sable/android-platforms/blob/master/android-30/android.jar?raw=true" > $config/android.jar
+            download "https://github.com/AbdullahM0hamed/automod/raw/master/App.kt" $config/App.kt
+            download "https://github.com/Sable/android-platforms/blob/master/android-30/android.jar?raw=true" $config/android.jar
             kotlinc -cp $config/android.jar -d $config/App.jar $config/App.kt
             dx --dex --output=$config/App.dex $config/App.jar
         fi
