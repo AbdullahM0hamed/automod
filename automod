@@ -30,6 +30,13 @@ download_baksmali() {
     fi
 }
 
+download_manifest_editor() {
+    if [[ ! -f $config/manifest-editor.jar ]]
+    then
+        download https://github.com/WindySha/ManifestEditor/releases/download/v1.0.2/ManifestEditor-1.0.2.jar $config/manifest-editor.jar
+    fi
+}
+
 get_compiled_dex() {
     if [[ ! -f $config/App.dex ]]
     then
@@ -49,6 +56,7 @@ get_compiled_dex() {
 mkdir -p $config 2> /dev/null
 download_smali
 download_baksmali
+download_manifest_editor
 
 smali() {
     java -jar $config/smali.jar "$@"
@@ -58,6 +66,10 @@ baksmali() {
     java -jar $config/baksmali.jar "$@"
 }
 
+add_automod() {
+    java -jar $config/manifest-editor.jar AndroidManifest.xml -an automod.App
+}
+
 folder=$(echo "${1%.*}" | tr ' ' '_')
 if [[ ! -x $folder ]]
 then
@@ -65,6 +77,7 @@ then
 fi
 
 classes=$(unzip -l "$1" | grep -oP "classes(\d+)?\.dex")
+found=0
 for class in $classes
 do
     unzip -p "$1" "$class" > "$folder/$class"
@@ -73,6 +86,7 @@ do
         rm "$folder/$class"
     else
         echo "Application found in $class"
+        found=$(($found+1))
         baksmali d "$folder/$class" -o "$folder/smali_${class%.*}"
         cd "$folder"
         rm "$class"
@@ -101,6 +115,16 @@ for class in $classes
 do
     zip "$1" $class
 done
+
+if [[ $found -eq 0 ]]
+then
+    unzip "$1" AndroidManifest.xml
+    add_automod
+    rm AndroidManifest.xml
+    mv AndroidManifest-new.xml AndroidManifest.xml
+    zip "$1" AndroidManifest.xml
+    read a | echo a 
+fi
 
 mv "$1" ../"$folder"_Modded_unsigned.apk
 cd ..
