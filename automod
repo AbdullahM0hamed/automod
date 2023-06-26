@@ -68,7 +68,7 @@ classes=$(unzip -l "$1" | grep -oP "classes(\d+)?\.dex")
 for class in $classes
 do
     unzip -p "$1" "$class" > "$folder/$class"
-    if [[ $(dx --find-usages "$folder/$class" "Landroid/app/Application;" onCreate | grep invoke-super) == "" ]]
+    if [[ $(dx --find-usages "$folder/$class" "Landroid/app/Application;" "<init>" | grep invoke-direct) == "" ]]
     then
         rm "$folder/$class"
     else
@@ -83,16 +83,8 @@ do
     fi
 done
 
-unzip -d "$folder"_extracted "$1"
-classes=$(ls $folder)
-for class in $classes
-do
-    rm "$folder"_extracted/"$class"
-done
-
-mv "$folder"/* "$folder"_extracted
-rm -rf "$folder"
-last=$(basename $(ls "$folder"_extracted/classes* | tail -1) | grep -oP "\d+")
+echo unzip -d "$folder"_extracted "$1"
+last=$(unzip -Z1 "$1" "classes*" | tail -1 | grep -oP "\d+")
 
 if [[ $last -eq 0 ]]
 then
@@ -100,8 +92,16 @@ then
 else
     last=$(($last+1))
 fi
-get_compiled_dex "$folder"_extracted/classes$last.dex
-cd "$folder"_extracted
-zip -r -D ../"$folder"_Modded_unsigned.apk *
+
+cp "$1" "$folder"
+get_compiled_dex "$folder"/classes$last.dex
+classes=$(ls $folder | grep classes)
+cd "$folder"
+for class in $classes
+do
+    zip "$1" $class
+done
+
+mv "$1" ../"$folder"_Modded_unsigned.apk
 cd ..
-rm -rf "$folder"_extracted
+rm -rf "$folder"
