@@ -5,12 +5,12 @@ config=~/.config/automod
 download() {
     if [[ $(command -v aria2c) != "" ]]
     then
-        aria2c "$1" -d "$(dirname "$2")" -o "$(basename "$2")"
+        aria2c "$apk" -d "$(dirname "$2")" -o "$(basename "$2")"
     elif [[ $(command -v curl) != "" ]]
     then
-        curl -L "$1" > "$2"
+        curl -L "$apk" > "$2"
     else
-        wget "$1" -O "$2"
+        wget "$apk" -O "$2"
     fi
 }
 
@@ -70,17 +70,46 @@ add_automod() {
     java -jar $config/manifest-editor.jar AndroidManifest.xml -an automod.App
 }
 
-folder=$(echo "${1%.*}" | tr ' ' '_')
+show_usage() {
+    echo "Usage: automod [options] [apk]"
+    echo -e "\t-h/--help: Display this message"
+    echo -e "\t-s [file]: Sign the modded apk, [file] must be a signature file to sign APKs"
+    exit 1
+}
+
+if [[ "$apk" == "--help" ]]
+then
+    show_usage
+fi
+
+sign_status=unsigned
+while getopts ":hs:" options
+do
+    case "$options" in
+        s)
+            sign_status=signed
+            key=${OPTARG}
+            ;;
+        *)
+            show_usage
+            ;;
+    esac
+done
+
+apk="${@: -1}"
+
+folder=$(echo "${apk%.*}" | tr ' ' '_')
+
 if [[ ! -x $folder ]]
 then
     mkdir $folder
 fi
 
-classes=$(unzip -l "$1" | grep -oP "classes(\d+)?\.dex")
+classes=$(unzip -l "$apk" | grep -oP "classes(\d+)?\.dex")
 found=0
 for class in $classes
 do
-    unzip -p "$1" "$class" > "$folder/$class"
+    unzip -p "$apk" "$class" > "$folder/$class"
     if [[ $(dx --find-usages "$folder/$class" "Landroid/app/Application;" "<init>" | grep invoke-direct) == "" ]]
     then
         rm "$folder/$class"
@@ -97,8 +126,7 @@ do
     fi
 done
 
-echo unzip -d "$folder"_extracted "$1"
-last=$(unzip -Z1 "$1" "classes*" | tail -1 | grep -oP "\d+")
+last=$(unzip -Z1 "$apk" "classes*" | tail -1 | grep -oP "\d+")
 
 if [[ $last -eq 0 ]]
 then
@@ -107,25 +135,29 @@ else
     last=$(($last+1))
 fi
 
-cp "$1" "$folder"
+cp "$apk" "$folder"
 get_compiled_dex "$folder"/classes$last.dex
 classes=$(ls $folder | grep classes)
 cd "$folder"
 for class in $classes
 do
-    zip "$1" $class
+    zip "$apk" $class
 done
 
 if [[ $found -eq 0 ]]
 then
-    unzip "$1" AndroidManifest.xml
+    unzip "$apk" AndroidManifest.xml
     add_automod
     rm AndroidManifest.xml
     mv AndroidManifest-new.xml AndroidManifest.xml
-    zip "$1" AndroidManifest.xml
-    read a | echo a 
+    zip "$apk" AndroidManifest.xml
 fi
 
-mv "$1" ../"$folder"_Modded_unsigned.apk
+if [[ "$sign_status" == "signed" ]]
+then
+    apksigner sign --ks $key "$apk"
+fi
+
+mv "$apk" ../"$folder"_modded_$sign_status.apk
 cd ..
 rm -rf "$folder"

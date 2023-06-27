@@ -23,7 +23,7 @@ This program makes the app's application class inherit from a custom Application
 # TODO
 - [x] - Support apps that don't have an Application class, by adding our own in manifest
 
-- [ ] - Sign the output APK
+- [x] - Sign the output APK
 
 - [ ] - Replace google services with microG in some apps (like YouTube)
 
