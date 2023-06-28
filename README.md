@@ -25,6 +25,4 @@ This program makes the app's application class inherit from a custom Application
 
 - [x] - Sign the output APK
 
-- [ ] - Replace google services with microG in some apps (like YouTube)
-
 - [x] - Properly Zip/Unzip APKs where there are multiple files with same name but different cases - an example (at least for me): https://play.google.com/store/apps/details?id=com.tavultesoft.kmapro

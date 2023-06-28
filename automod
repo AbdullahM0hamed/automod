@@ -5,12 +5,12 @@ config=~/.config/automod
 download() {
     if [[ $(command -v aria2c) != "" ]]
     then
-        aria2c "$apk" -d "$(dirname "$2")" -o "$(basename "$2")"
+        aria2c "$1" -d "$(dirname "$2")" -o "$(basename "$2")"
     elif [[ $(command -v curl) != "" ]]
     then
-        curl -L "$apk" > "$2"
+        curl -L "$1" > "$2"
     else
-        wget "$apk" -O "$2"
+        wget "$1" -O "$2"
     fi
 }
 
@@ -33,7 +33,7 @@ download_baksmali() {
 download_manifest_editor() {
     if [[ ! -f $config/manifest-editor.jar ]]
     then
-        download https://github.com/WindySha/ManifestEditor/releases/download/v1.0.2/ManifestEditor-1.0.2.jar $config/manifest-editor.jar
+        download https://github.com/AbdullahM0hamed/ManifestEditor/releases/download/v0.0.1/manifest-editor.jar $config/manifest-editor.jar
     fi
 }
 
@@ -45,8 +45,9 @@ get_compiled_dex() {
             download "https://github.com/AbdullahM0hamed/automod/blob/master/App.dex?raw=true" $config/App.dex
         else
             download "https://github.com/AbdullahM0hamed/automod/raw/master/App.kt" $config/App.kt
-            download "https://github.com/Sable/android-platforms/blob/master/android-30/android.jar?raw=true" $config/android.jar
-            kotlinc -cp $config/android.jar -d $config/App.jar $config/App.kt
+            #download "https://github.com/Sable/android-platforms/blob/master/android-30/android.jar?raw=true" $config/android.jar
+            echo doing this
+            kotlinc -cp $config/android.jar -d $config/App.jar $config/App.kt $config/SettingsActivity.kt
             dx --dex --output=$config/App.dex $config/App.jar
         fi
     fi
@@ -67,7 +68,7 @@ baksmali() {
 }
 
 add_automod() {
-    java -jar $config/manifest-editor.jar AndroidManifest.xml -an automod.App
+    java -jar $config/manifest-editor.jar AndroidManifest.xml -an automod.App -md "automod.SettingsActivity: "
 }
 
 show_usage() {
