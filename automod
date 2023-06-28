@@ -45,8 +45,7 @@ get_compiled_dex() {
             download "https://github.com/AbdullahM0hamed/automod/blob/master/App.dex?raw=true" $config/App.dex
         else
             download "https://github.com/AbdullahM0hamed/automod/raw/master/App.kt" $config/App.kt
-            #download "https://github.com/Sable/android-platforms/blob/master/android-30/android.jar?raw=true" $config/android.jar
-            echo doing this
+            download "https://github.com/Sable/android-platforms/blob/master/android-30/android.jar?raw=true" $config/android.jar
             kotlinc -cp $config/android.jar -d $config/App.jar $config/App.kt $config/SettingsActivity.kt
             dx --dex --output=$config/App.dex $config/App.jar
         fi
