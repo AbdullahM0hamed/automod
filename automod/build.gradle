@@ -1,0 +1,64 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"                                                          
+    defaultConfig {
+        applicationId "auto.mod"
+        minSdkVersion 21
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+        multiDexEnabled true
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "automod.zip"
+        }
+    }
+
+    task automod {
+        doLast {
+            def app = new File(project.projectDir.getAbsolutePath() + "/build/app.apk")
+            if (!app.exists()) {
+                new URL("https://github.com/LagradOst/QuickNovel/releases/download/v3.1.7/3.1.7.apk").withInputStream { i -> app.withOutputStream { it << i }}
+            }
+            def zApp = zipTree(app)
+            def classList = zApp.matching { include 'classes*.dex' }.getFiles()
+            def lastClass = classList[classList.size() - 1].getName()
+            def number = lastClass.substring(7, lastClass.lastIndexOf('.'))
+            if (number.isEmpty()) {
+                number = "1"
+            }
+            def automodClass = zipTree(project.projectDir.getAbsolutePath() + "/build/outputs/apk/debug/automod.zip").matching { include 'classes2.dex' }.singleFile
+            def cls = new File(project.projectDir.getAbsolutePath() + "/build/classes" + (number.toInteger() + 1).toString() + ".dex")
+            automodClass.withInputStream { i -> cls.withOutputStream { it << i }}
+            def zClass = fileTree(project.projectDir.getAbsolutePath() + "/build/").matching { include 'classes' + (number.toInteger() + 1).toString() + '.dex' }
+            def newApp = zipTree(app).plus(zClass)
+            def temp = zApp.getAsPath().substring(0, zApp.getAsPath().indexOf(":"))
+            temp = temp.substring(0, temp.lastIndexOf("/") + 1)
+            try (ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(project.projectDir.getAbsolutePath() + "/build/updated.apk"))) {
+                for (File file : newApp.getFiles()) {
+                    def name = file.getAbsolutePath().replace(temp, "").replace(project.projectDir.getAbsolutePath() + "/build/", "")
+                    zOut.putNextEntry(new ZipEntry(name))
+                    try (FileInputStream input = new FileInputStream(file)) {
+                        byte[] buffer = new byte[4096]
+                        int bytesRead
+                        while ((bytesRead = input.read(buffer)) != -1) {
+                            zOut.write(buffer, 0, bytesRead)
+                        }
+                    }
+                    zOut.closeEntry()
+                }
+            }
+        }
+    }
+
+    tasks.build.finalizedBy(automod)
+}

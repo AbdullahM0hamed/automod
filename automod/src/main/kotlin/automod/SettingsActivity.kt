@@ -1,4 +1,4 @@
-package automod
+package auto.mod
 
 import android.app.Activity
 import android.os.Bundle
