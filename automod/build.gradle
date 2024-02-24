@@ -25,6 +25,8 @@ android {
         variant.outputs.all {
             outputFileName = "automod.zip"
         }
+
+        variant.assemble.finalizedBy(automod)
     }
 
     task automod {
@@ -40,11 +42,20 @@ android {
             if (number.isEmpty()) {
                 number = "1"
             }
-            def automodClass = zipTree(project.projectDir.getAbsolutePath() + "/build/outputs/apk/debug/automod.zip").matching { include 'classes2.dex' }.singleFile
-            def cls = new File(project.projectDir.getAbsolutePath() + "/build/classes" + (number.toInteger() + 1).toString() + ".dex")
-            automodClass.withInputStream { i -> cls.withOutputStream { it << i }}
-            def zClass = fileTree(project.projectDir.getAbsolutePath() + "/build/").matching { include 'classes' + (number.toInteger() + 1).toString() + '.dex' }
-            def newApp = zipTree(app).plus(zClass)
+            def newFiles = zApp.getFiles()
+            def j = 0
+            def zipLoc = project.projectDir.getAbsolutePath() + "/build/outputs/apk/debug/automod.zip"
+            def zip = new File(zipLoc)
+            if (!zip.exists()) {
+                zipLoc = zipLoc.replace("debug", "release")
+            }
+            for (File automodClass : zipTree(zipLoc).matching { include 'classes*.dex' }.getFiles()) {
+                def cls = new File(project.projectDir.getAbsolutePath() + "/build/classes" + (number.toInteger() + 1 + j).toString() + ".dex")
+                automodClass.withInputStream { i -> cls.withOutputStream { it << i }}
+                newFiles.add(cls)
+                j += 1
+            }
+            newFiles.addAll(zipTree(zipLoc).matching { include 'lib/' }.getFiles())
             def smali = new File(project.projectDir.getAbsolutePath() + "/build/smali.jar")
             if (!smali.exists()) {
                 new URL("https://bitbucket.org/JesusFreke/smali/downloads/smali-2.5.2.jar").withInputStream { i -> smali.withOutputStream { it << i }}
@@ -70,7 +81,7 @@ android {
             def regex = Pattern.compile("application.*android:name", Pattern.DOTALL)
             def matcher = regex.matcher(decoded)
             def found = matcher.find()
-	    def manifestEditor = new File(project.projectDir.getAbsolutePath() + "/build/manifest-editor.jar")
+            def manifestEditor = new File(project.projectDir.getAbsolutePath() + "/build/manifest-editor.jar")
             if (!manifestEditor.exists()) {
                 new URL("https://github.com/AbdullahM0hamed/ManifestEditor/releases/download/v0.0.1/manifest-editor.jar").withInputStream { i -> manifestEditor.withOutputStream { it << i}}
             }
@@ -96,13 +107,13 @@ android {
                             content = content.replaceAll(".super Landroid/app/Application;", ".super Lauto/mod/App;")
                             Files.write(path, content.getBytes(charset))
                         }
-	                }
+                    }
                     javaexec {
                         main = "-jar"
                         args = [smali.getAbsolutePath(), "a", project.projectDir.getAbsolutePath() + "/build/smali_" + clsFile.getName(), "-o", project.projectDir.getAbsolutePath() + "/build/new_" + clsFile.getName()]
                     }
                 }
-            } else {
+        } else {
                 javaexec {
                     main = "-jar"
                     args = [manifestEditor.getAbsolutePath(), manifestLoc.getAbsolutePath(), "-an", "auto.mod.App", "-md", "auto.mod.SettingsActivity: ", "--force"]
@@ -110,8 +121,9 @@ android {
             }
             def temp = zApp.getAsPath().substring(0, zApp.getAsPath().indexOf(":"))
             temp = temp.substring(0, temp.lastIndexOf("/") + 1)
-            try (ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(project.projectDir.getAbsolutePath() + "/build/updated.apk"))) {
-                for (File file : newApp.getFiles()) {
+            def updated = project.projectDir.getAbsolutePath() + "/build/updated.apk"
+            try (ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(updated))) {
+                for (File file : newFiles) {
                     def name = file.getAbsolutePath().replace(temp, "").replace(project.projectDir.getAbsolutePath() + "/build/", "")
                     if (name == "AndroidManifest.xml") {
                         file = new File(project.projectDir.getAbsolutePath() + "/build/AndroidManifest-orig-new.xml")
@@ -124,6 +136,9 @@ android {
                             }
                         }
                     }
+                    if (name.startsWith("tmp/expandedArchives/automod.zip_")) {
+                        name = name.substring(name.indexOf("lib"), name.size())
+                    }
                     zOut.putNextEntry(new ZipEntry(name))
                     try (FileInputStream input = new FileInputStream(file)) {
                         byte[] buffer = new byte[4096]
@@ -135,8 +150,30 @@ android {
                     zOut.closeEntry()
                 }
             }
+            def dex2jar = project.projectDir.getAbsolutePath() + "/build/dex2jar-jars-master"
+            def dex2jarDir = new File(dex2jar)
+            if (!dex2jarDir.exists()) {
+                def dex2jarZip = new File(dex2jar + ".zip")
+                new URL("https://github.com/AbdullahM0hamed/dex2jar-jars/archive/refs/heads/master.zip").withInputStream { i -> dex2jarZip.withOutputStream { it << i }}
+                copy {
+                    from zipTree(dex2jarZip.getAbsolutePath())
+                    into dex2jar
+                }
+            }
+            javaexec {
+                main = "com.googlecode.dex2jar.tools.Dex2jarCmd"
+                classpath = fileTree(dex2jar)
+                args = [updated, "-o", project.projectDir.getAbsolutePath() + "/build/updated.jar"]
+            }
+            copy {
+                include(project.projectDir.getAbsolutePath() + "/build/updated.jar")
+            }
         }
     }
 
     tasks.build.finalizedBy(automod)
+}
+
+dependencies {
+    implementation 'top.canyie.pine:core:0.2.8'
 }
