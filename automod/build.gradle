@@ -113,7 +113,7 @@ android {
                         args = [smali.getAbsolutePath(), "a", project.projectDir.getAbsolutePath() + "/build/smali_" + clsFile.getName(), "-o", project.projectDir.getAbsolutePath() + "/build/new_" + clsFile.getName()]
                     }
                 }
-        } else {
+            } else {
                 javaexec {
                     main = "-jar"
                     args = [manifestEditor.getAbsolutePath(), manifestLoc.getAbsolutePath(), "-an", "auto.mod.App", "-md", "auto.mod.SettingsActivity: ", "--force"]
