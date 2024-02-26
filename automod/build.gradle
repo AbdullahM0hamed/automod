@@ -26,7 +26,7 @@ android {
             outputFileName = "automod.zip"
         }
 
-        variant.assemble.finalizedBy(automod)
+        variant.assembleProvider.get().finalizedBy(automod)
     }
 
     task automod {
@@ -148,6 +148,18 @@ android {
                         }
                     }
                     zOut.closeEntry()
+                }
+            }
+            if (zipLoc != zipLoc.replace("debug", "")) {
+                def apk = file(updated)
+                if (apk.exists()) {
+                    def debugKeystorePath = project.gradle.gradleUserHomeDir.parent + "/.android/debug.keystore"
+                    def apksigner = sdkDirectory.getPath() + '/build-tools/' + buildToolsVersion + '/lib/apksigner.jar'
+                    javaexec {
+                        main = "-jar"
+                        jvmArgs = ["-Xmx1024M"]
+                        args = [apksigner, 'sign', '--ks', debugKeystorePath, '--ks-key-alias', 'androiddebugkey', '--ks-pass', 'pass:android', '--in', updated, '--out', updated.replace("updated.apk", "updated_signed.apk")]
+                    }
                 }
             }
             def dex2jar = project.projectDir.getAbsolutePath() + "/build/dex2jar-jars-master"
