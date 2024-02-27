@@ -81,11 +81,11 @@ android {
             def regex = Pattern.compile("application.*android:name", Pattern.DOTALL)
             def matcher = regex.matcher(decoded)
             def found = matcher.find()
-            def manifestEditor = new File(project.projectDir.getAbsolutePath() + "/build/manifest-editor.jar")
+	    def manifestEditor = new File(project.projectDir.getAbsolutePath() + "/build/manifest-editor.jar")
             if (!manifestEditor.exists()) {
                 new URL("https://github.com/AbdullahM0hamed/ManifestEditor/releases/download/v0.0.1/manifest-editor.jar").withInputStream { i -> manifestEditor.withOutputStream { it << i}}
             }
-            if (found) {
+	    if (found) {
                 javaexec {
                     main = "-jar"
                     args = [manifestEditor.getAbsolutePath(), manifestLoc.getAbsolutePath(), "-md", "auto.mod.SettingsActivity: ", "--force"]
