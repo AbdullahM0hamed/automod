@@ -10,7 +10,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 34
     buildToolsVersion "29.0.3"                                                          
     defaultConfig {
         applicationId "auto.mod"
@@ -188,4 +188,5 @@ android {
 
 dependencies {
     implementation 'top.canyie.pine:core:0.2.8'
+    debugImplementation 'com.willowtreeapps.hyperion:hyperion-core:0.9.38'
 }

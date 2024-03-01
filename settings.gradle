@@ -1,1 +1,3 @@
 include ':automod'
+include ':hyperion-core'
+include ':hyperion-plugin'
