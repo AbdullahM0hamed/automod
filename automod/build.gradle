@@ -130,9 +130,6 @@ android {
             def updated = project.projectDir.getAbsolutePath() + "/build/updated.apk"
             try (ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(updated))) {
                 for (File file : newFiles) {
-                    if (file.getAbsolutePath().contains("META-INF")) {
-                        continue;
-                    }
                     def name = file.getAbsolutePath().replace(temp, "").replace(project.projectDir.getAbsolutePath() + "/build/", "")
                     if (name == "AndroidManifest.xml") {
                         file = new File(project.projectDir.getAbsolutePath() + "/build/AndroidManifest-orig-new.xml")
