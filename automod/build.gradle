@@ -6,12 +6,18 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.regex.Pattern
+import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 android {
+<<<<<<< HEAD
     compileSdkVersion 34
     buildToolsVersion "29.0.3"                                                          
+=======
+    compileSdkVersion 29
+    buildToolsVersion "30.0.3"                                                          
+>>>>>>> f26fd7f (Zipalign with uncompressed resources.arsc)
     defaultConfig {
         applicationId "auto.mod"
         minSdkVersion 21
@@ -124,6 +130,9 @@ android {
             def updated = project.projectDir.getAbsolutePath() + "/build/updated.apk"
             try (ZipOutputStream zOut = new ZipOutputStream(new FileOutputStream(updated))) {
                 for (File file : newFiles) {
+                    if (file.getAbsolutePath().contains("META-INF")) {
+                        continue;
+                    }
                     def name = file.getAbsolutePath().replace(temp, "").replace(project.projectDir.getAbsolutePath() + "/build/", "")
                     if (name == "AndroidManifest.xml") {
                         file = new File(project.projectDir.getAbsolutePath() + "/build/AndroidManifest-orig-new.xml")
@@ -139,10 +148,25 @@ android {
                     if (name.startsWith("tmp/expandedArchives/automod.zip_")) {
                         name = name.substring(name.indexOf("lib"), name.size())
                     }
-                    zOut.putNextEntry(new ZipEntry(name))
+                    def entry = new ZipEntry(name)
+                    byte[] buffer = new byte[4096]
+                    int bytesRead
+                    if (name == "resources.arsc") {
+                        entry.setMethod(ZipEntry.STORED)
+                        entry.setCompressedSize(file.length())
+                        entry.setSize(file.length())
+                        zOut.setLevel(0)
+                        def crc = new CRC32()
+                        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+                            crc.reset()
+                            while ((bytesRead = bis.read(buffer)) != -1) {
+                                crc.update(buffer, 0, bytesRead)
+                            }
+                        }
+                        entry.setCrc(crc.getValue())
+                    }
+                    zOut.putNextEntry(entry)
                     try (FileInputStream input = new FileInputStream(file)) {
-                        byte[] buffer = new byte[4096]
-                        int bytesRead
                         while ((bytesRead = input.read(buffer)) != -1) {
                             zOut.write(buffer, 0, bytesRead)
                         }
@@ -153,12 +177,17 @@ android {
             if (zipLoc != zipLoc.replace("debug", "")) {
                 def apk = file(updated)
                 if (apk.exists()) {
+                    def zipalign = sdkDirectory.getPath() + '/build-tools/' + buildToolsVersion + '/zipalign'
+                    def zipaligned = project.projectDir.getAbsolutePath() + '/build/updated_zipaligned.apk'
+                    exec {
+                        commandLine zipalign, '-p', '-f', '-v', '4', updated, zipaligned
+                    }
                     def debugKeystorePath = project.gradle.gradleUserHomeDir.parent + "/.android/debug.keystore"
                     def apksigner = sdkDirectory.getPath() + '/build-tools/' + buildToolsVersion + '/lib/apksigner.jar'
                     javaexec {
                         main = "-jar"
                         jvmArgs = ["-Xmx1024M"]
-                        args = [apksigner, 'sign', '--ks', debugKeystorePath, '--ks-key-alias', 'androiddebugkey', '--ks-pass', 'pass:android', '--in', updated, '--out', updated.replace("updated.apk", "updated_signed.apk")]
+                        args = [apksigner, 'sign', '--ks', debugKeystorePath, '--ks-key-alias', 'androiddebugkey', '--ks-pass', 'pass:android', '--in', updated, '--out', zipaligned.replace("zipaligned", "zipaligned_signed")]
                     }
                 }
             }
