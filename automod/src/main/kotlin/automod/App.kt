@@ -45,7 +45,6 @@ open class App : Application() {
                     when (action) {
                         MotionEvent.ACTION_POINTER_DOWN -> {
                             android.util.Log.e("AUTOMOD", "Counter: " + counter)
->>>>>>> f26fd7f (Zipalign with uncompressed resources.arsc)
                             if (counter == 2) {
                                 activity.startActivity(
                                     Intent(
