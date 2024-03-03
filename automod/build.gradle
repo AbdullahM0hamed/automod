@@ -209,5 +209,4 @@ android {
 
 dependencies {
     implementation 'top.canyie.pine:core:0.2.8'
-    debugImplementation 'com.willowtreeapps.hyperion:hyperion-core:0.9.38'
 }
