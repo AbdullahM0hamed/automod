@@ -11,13 +11,8 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 android {
-<<<<<<< HEAD
-    compileSdkVersion 34
-    buildToolsVersion "29.0.3"                                                          
-=======
     compileSdkVersion 29
     buildToolsVersion "30.0.3"                                                          
->>>>>>> f26fd7f (Zipalign with uncompressed resources.arsc)
     defaultConfig {
         applicationId "auto.mod"
         minSdkVersion 21
