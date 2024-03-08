@@ -57,6 +57,7 @@ android {
                 j += 1
             }
             newFiles.addAll(zipTree(zipLoc).matching { include 'lib/' }.getFiles())
+            newFiles.addAll(zipTree(zipLoc).matching { include 'assets/' }.getFiles())
             def smali = new File(project.projectDir.getAbsolutePath() + "/build/smali.jar")
             if (!smali.exists()) {
                 new URL("https://bitbucket.org/JesusFreke/smali/downloads/smali-2.5.2.jar").withInputStream { i -> smali.withOutputStream { it << i }}
@@ -138,7 +139,11 @@ android {
                         }
                     }
                     if (name.startsWith("tmp/expandedArchives/automod.zip_")) {
-                        name = name.substring(name.indexOf("lib"), name.size())
+                        def index = name.indexOf("lib")
+                        if (index == -1) {
+                            index = name.indexOf("assets")
+                        }
+                        name = name.substring(index, name.size())
                     }
                     def entry = new ZipEntry(name)
                     byte[] buffer = new byte[4096]
@@ -179,7 +184,7 @@ android {
                     javaexec {
                         main = "-jar"
                         jvmArgs = ["-Xmx1024M"]
-                        args = [apksigner, 'sign', '--ks', debugKeystorePath, '--ks-key-alias', 'androiddebugkey', '--ks-pass', 'pass:android', '--in', updated, '--out', zipaligned.replace("zipaligned", "zipaligned_signed")]
+                        args = [apksigner, 'sign', '--ks', debugKeystorePath, '--ks-key-alias', 'androiddebugkey', '--ks-pass', 'pass:android', '--in', zipaligned, '--out', zipaligned.replace("zipaligned", "zipaligned_signed")]
                     }
                 }
             }
@@ -207,6 +212,11 @@ android {
     tasks.build.finalizedBy(automod)
 }
 
+/*repositories{
+    maven { url "https://maven.aliucord.com/snapshots" }
+}*/
+
 dependencies {
     implementation 'top.canyie.pine:core:0.2.8'
+    //implementation 'com.aliucord:Aliuhook:main-SNAPSHOT'
 }
